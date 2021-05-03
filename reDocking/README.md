@@ -7,12 +7,13 @@ For now, the script fetch the proteins and align them.
 
 **reDock** is a script that uses several third party software, you need have installed these packages:
 
-1. Pymol
-2. Autodock
-3. GNUPlot
+1. **[Pymol](https://pymol.org/2/)** to obtain the proteins, align and calculate RMSD
+2. **[Reduce](https://ambermd.org/AmberTools.php)** to add hydrogens, **Reduce** is part of **[Ambertools 21](https://ambermd.org/AmberTools.php)**
+3. **[Autodock4](http://autodock.scripps.edu/)** to performs the docking calculation
+4. **[GNUPlot](http://www.gnuplot.info/)** to graph the results
 
 ## Installation
-Only copy the script in a directory of your choice and run in your bash shell
+Only copy the script in your working directory and run in your bash shell
 
 ```bash
 ./reDock.sh

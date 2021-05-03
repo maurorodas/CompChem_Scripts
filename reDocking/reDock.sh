@@ -44,19 +44,29 @@ do
 	# This is the reference protein, only fetch his pdb file, extract the ligand and performs a basic cleaning
 	# note that this protein does not need and alignment, is the reference!
 	cd $fileProt
-	pymol -c -d 'fetch '$my_query', async=0; save '$pdbcode'.pdb'
+	pymol -c -d 'fetch '$my_query', type=pdb, async=0; save '$pdbcode'.pdb'
 	grep $ligandName $pdbcode.pdb > $ligand.pdb
-	grep -v -e HOH -e $ligandName -e CONECT $pdbcode.pdb > temp_$pdbcode.pdb
+	grep -v -e HOH -e $ligandName -e CONECT -e HETATM $pdbcode.pdb > temp_$pdbcode.pdb
 	mv temp_$pdbcode.pdb $pdbcode.pdb
+	# Using reduce from ambertools to add hydrogens
+	ligand_h=`echo $ligand"_H"`
+	protein_h=`echo $pdbcode"_H"`
+	reduce $ligand.pdb > $ligand_h.pdb
+	reduce $pdbcode.pdb > $protein_h.pdb
 	cd ..
     else
 	# Performs the aligment using the "align" method of Pymol, saves the protein with the new coordinates,
 	# extract the ligand and make a basic cleaning
 	cd $fileProt
-	pymol -c -d 'fetch '$my_query' '$query_ref', async=0; align '$my_query', '$query_ref'; save '$pdbcode'.pdb, '$my_query''
+	pymol -c -d 'fetch '$my_query' '$query_ref', type=pdb, async=0; align '$my_query', '$query_ref'; save '$pdbcode'.pdb, '$my_query''
 	grep $ligandName $pdbcode.pdb > $ligand.pdb
-	grep -v -e HOH -e $ligandName -e CONECT $pdbcode.pdb > temp_$pdbcode.pdb
+	grep -v -e HOH -e $ligandName -e CONECT -e HETATM $pdbcode.pdb > temp_$pdbcode.pdb
 	mv temp_$pdbcode.pdb $pdbcode.pdb
+	# Using reduce from ambertools to add hydrogens
+	ligand_h=`echo $ligand"_H"`
+	protein_h=`echo $pdbcode"_H"`
+	reduce $ligand.pdb > $ligand_h.pdb
+	reduce $pdbcode.pdb > $protein_h.pdb
 	cd ..
     fi      
 done
