@@ -11,7 +11,7 @@ For now, the script fetch the proteins and align them.
 2. Autodock
 3. GNUPlot
 
-## Instalation
+## Installation
 Only copy the script in a directory of your choice and run in your bash shell
 
 ```bash
@@ -29,6 +29,11 @@ Only copy the script in a directory of your choice and run in your bash shell
 ```
 
 The first protein is always taken as the reference protein
+
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+Please make sure to update tests as appropriate.
 
 ## License
 [GNU General Public License v. 3](https://www.gnu.org/licenses/gpl-3.0.html)
