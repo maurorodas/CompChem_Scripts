@@ -5,7 +5,7 @@ For now, the script fetch the proteins and align them.
 
 ## Prerequisites
 
-**reDock** is a script that uses several third party softwares, you need have installed these packages:
+**reDock** is a script that uses several third party software, you need have installed these packages:
 
 1. Pymol
 2. Autodock
