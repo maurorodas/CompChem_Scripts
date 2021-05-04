@@ -1,7 +1,7 @@
-# Bash script for Redocking calculation
+# reDock: script for Redocking calculation
 **reDock** is a bash script to perform a redocking calculation using several proteins and ligands, read the results and graph them.
 
-For now, the script fetch the proteins and align them.
+For now, the script performs the docking calculations and to obtain the RMSD for each ligand and his poses.
 
 ## Prerequisites
 
@@ -10,6 +10,7 @@ For now, the script fetch the proteins and align them.
 1. **[Pymol](https://pymol.org/2/)** to obtain the proteins, align and calculate RMSD
 2. **[Reduce](https://ambermd.org/AmberTools.php)** to add hydrogens, **Reduce** is part of **[Ambertools 21](https://ambermd.org/AmberTools.php)**
 3. **[Autodock4](http://autodock.scripps.edu/)** to performs the docking calculation
+4. **[MGLTools](https://ccsb.scripps.edu/mgltools/downloads/)** to prepare all files and to obtain the ligand poses
 4. **[GNUPlot](http://www.gnuplot.info/)** to graph the results
 
 ## Installation
