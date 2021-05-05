@@ -241,3 +241,63 @@ do
     cd ..
     
 done
+
+#Sorting RMSD values and extracting the lowest value for each protein and graph them
+
+cd Results
+
+for i in `seq 1 $protNumber`
+do
+    pdbcode=`awk -v var=$i '{if(NR==var) print $1}' ../$filename`
+    dataFile=`echo "rmsd_"$pdbcode".dat"`
+    dataLowest=`echo "allProteinsLowestRMSD.dat"`
+
+    vectorProts[$i-1]=$pdbcode
+
+    for j in `seq 1 $protNumber`
+    do
+	column=$((j + 1))
+	lowestRMSD=`sort -n -k $column -t ' ' $dataFile | awk -v var=$column '{if(NR==1) print $var}'`
+	
+	if [ $i -eq 1 ]
+	then
+	    echo $j" "$lowestRMSD >> $workindDir/Results/$dataLowest
+	else
+	    sed -i.bak "${j}s/$/ ${lowestRMSD}/" $workindDir/Results/$dataLowest
+	    rm $workindDir/Results/*.bak
+	fi
+    done
+done
+
+gnuPlotAllProts="allProteinsLowestRMSD.gp"
+gnuPlotGraphAllprots="graph_allProteinsLowestRMSD.png"
+
+touch $workindDir/Results/$gnuPlotAllProts
+
+echo "#!/usr/bin/gnuplot" >> $workindDir/Results/$gnuPlotAllProts
+echo "" >> $workindDir/Results/$gnuPlotAllProts
+echo 'set terminal pngcairo enhanced background "#ffffff" fontscale 2.5 dashed size 1920, 1280' >> $workindDir/Results/$gnuPlotAllProts
+echo "" >> $workindDir/Results/$gnuPlotAllProts
+echo "set encoding iso_8859_1" >> $workindDir/Results/$gnuPlotAllProts
+echo "set output '"$workindDir"/Results/"$gnuPlotGraphAllprots"'" >> $workindDir/Results/$gnuPlotAllProts
+echo "" >> $workindDir/Results/$gnuPlotAllProts
+echo "set xrange [1:"$protNumber"]" >> $workindDir/Results/$gnuPlotAllProts
+echo "set yrange [0:4]" >> $workindDir/Results/$gnuPlotAllProts
+echo "" >> $workindDir/Results/$gnuPlotAllProts
+echo 'set xlabel "Ligands" font "Arial, 20"' >> $workindDir/Results/$gnuPlotAllProts
+echo 'set ylabel "RMSD"  font "Arial, 20"' >> $workindDir/Results/$gnuPlotAllProts
+echo "" >> $workindDir/Results/$gnuPlotAllProts
+echo 'set key top horizontal font "Arial, 18" maxcols 4' >> $workindDir/Results/$gnuPlotAllProts
+echo 'set xtics axis nomirror out font "Arial, 20"' >> $workindDir/Results/$gnuPlotAllProts
+echo 'set ytics axis nomirror out font "Arial, 20"' >> $workindDir/Results/$gnuPlotAllProts
+echo "set mxtics" >> $workindDir/Results/$gnuPlotAllProts
+echo "set mytics" >> $workindDir/Results/$gnuPlotAllProts
+echo "" >> $workindDir/Results/$gnuPlotAllProts
+echo 'set arrow from 1,2 to '$protNumber',2 nohead dt 9 lw 4 lc "red"' >> $workindDir/Results/$gnuPlotAllProts
+echo 'list = "'${vectorProts[@]}'"' >> $workindDir/Results/$gnuPlotAllProts
+echo "item(n) = word(list,n)" >> $workindDir/Results/$gnuPlotAllProts
+echo 'plot for [i=1:words(list)] "'$workindDir/Results/$dataLowest'" using 1:i+1 title item(i) with linespoints lw 2.5 ps 3' >> $workindDir/Results/$gnuPlotAllProts
+
+gnuplot $workindDir/Results/$gnuPlotAllProts
+
+cd ..
