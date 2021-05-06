@@ -195,8 +195,10 @@ do
 	    if [ $lig -eq 1 ]
 	    then
 		echo $pose" "$rmsd >> $workindDir/Results/$dataFile
+		echo $pdbcode" "$rmsd >> $workindDir/Results/allRMSDdata.dat
 	    else
 		sed -i.bak "${pose}s/$/ ${rmsd}/" $workindDir/Results/$dataFile
+		echo $pdbcode" "$rmsd >> $workindDir/Results/allRMSDdata.dat
 		rm $workindDir/Results/*.bak
 	    fi
 	    	    
@@ -220,12 +222,12 @@ do
     echo "set output '"$workindDir"/Results/"$gnuPlotGraph"'" >> $workindDir/Results/$gnuPlotFile
     echo "" >> $workindDir/Results/$gnuPlotFile
     echo "set xrange [1:10]" >> $workindDir/Results/$gnuPlotFile
-    echo "set yrange [0:4]" >> $workindDir/Results/$gnuPlotFile
+    echo "set yrange [0:*]" >> $workindDir/Results/$gnuPlotFile
     echo "" >> $workindDir/Results/$gnuPlotFile
     echo 'set xlabel "Poses" font "Arial, 20"' >> $workindDir/Results/$gnuPlotFile
     echo 'set ylabel "RMSD"  font "Arial, 20"' >> $workindDir/Results/$gnuPlotFile
     echo "" >> $workindDir/Results/$gnuPlotFile
-    echo 'set key top horizontal font "Arial, 18" maxcols 4' >> $workindDir/Results/$gnuPlotFile
+    echo 'set key outside top horizontal font "Arial, 18" maxcols 4' >> $workindDir/Results/$gnuPlotFile
     echo 'set xtics axis nomirror out font "Arial, 20"' >> $workindDir/Results/$gnuPlotFile
     echo 'set ytics axis nomirror out font "Arial, 20"' >> $workindDir/Results/$gnuPlotFile
     echo "set mxtics" >> $workindDir/Results/$gnuPlotFile
@@ -269,6 +271,30 @@ do
     done
 done
 
+echo "#!/usr/bin/gnuplot" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo 'set terminal pngcairo enhanced background "#ffffff" fontscale 2.5 dashed size 1920, 1280' >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "set encoding iso_8859_1" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "set output '"$workindDir"/Results/gnuPlotAllRMSD.png'" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "set style fill solid 0.5 border -1" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "set style boxplot outliers pointtype 7" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "set style data boxplot" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "set boxwidth  0.5" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "set pointsize 3" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "unset key" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo 'set xtics auto nomirror font "Arial"' >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo 'set ytics axis nomirror out font "Arial, 20"' >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "set yrange [*:*]" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo 'set arrow from 0,2 to '$protNumber',2 nohead dt 9 lw 4 lc "red"' >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo 'set ylabel "RMSD" font "Arial, 20"' >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "" >> $workindDir/Results/gnuPlotAllRMSD.gp
+echo "plot 'allRMSDdata.dat' using (1):2:(0):1 lc variable lw 2" >> $workindDir/Results/gnuPlotAllRMSD.gp
+
+gnuplot $workindDir/Results/gnuPlotAllRMSD.gp
+
 gnuPlotAllProts="allProteinsLowestRMSD.gp"
 gnuPlotGraphAllprots="graph_allProteinsLowestRMSD.png"
 
@@ -282,12 +308,12 @@ echo "set encoding iso_8859_1" >> $workindDir/Results/$gnuPlotAllProts
 echo "set output '"$workindDir"/Results/"$gnuPlotGraphAllprots"'" >> $workindDir/Results/$gnuPlotAllProts
 echo "" >> $workindDir/Results/$gnuPlotAllProts
 echo "set xrange [1:"$protNumber"]" >> $workindDir/Results/$gnuPlotAllProts
-echo "set yrange [0:4]" >> $workindDir/Results/$gnuPlotAllProts
+echo "set yrange [0:*]" >> $workindDir/Results/$gnuPlotAllProts
 echo "" >> $workindDir/Results/$gnuPlotAllProts
 echo 'set xlabel "Ligands" font "Arial, 20"' >> $workindDir/Results/$gnuPlotAllProts
 echo 'set ylabel "RMSD"  font "Arial, 20"' >> $workindDir/Results/$gnuPlotAllProts
 echo "" >> $workindDir/Results/$gnuPlotAllProts
-echo 'set key top horizontal font "Arial, 18" maxcols 4' >> $workindDir/Results/$gnuPlotAllProts
+echo 'set key outside top horizontal font "Arial, 18" maxcols 4' >> $workindDir/Results/$gnuPlotAllProts
 echo 'set xtics axis nomirror out font "Arial, 20"' >> $workindDir/Results/$gnuPlotAllProts
 echo 'set ytics axis nomirror out font "Arial, 20"' >> $workindDir/Results/$gnuPlotAllProts
 echo "set mxtics" >> $workindDir/Results/$gnuPlotAllProts

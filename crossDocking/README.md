@@ -1,11 +1,11 @@
-# reDock: script for Redocking calculation
-**reDock** is a bash script to perform a redocking calculation using several proteins and ligands, read the results and graph them.
+# crossDock: script for cross-Docking calculation
+**crossDock** is a bash script to perform a cross-Docking calculation using several proteins and ligands, read the results and graph them.
 
-For now, the script performs the docking calculations and to obtain the RMSD for each ligand and his poses.
+The Script is almost finished, a better documentation is coming soon. 
 
 ## Prerequisites
 
-**reDock** is a script that uses several third party software, you need have installed these packages:
+**crossDock** is a script that uses several third party software, you need have installed these packages:
 
 1. **[Pymol](https://pymol.org/2/)** to obtain the proteins, align and calculate RMSD
 2. **[Reduce](https://ambermd.org/AmberTools.php)** to add hydrogens, **Reduce** is part of **[Ambertools 21](https://ambermd.org/AmberTools.php)**
@@ -17,11 +17,11 @@ For now, the script performs the docking calculations and to obtain the RMSD for
 Only copy the script in your working directory and run in your bash shell
 
 ```bash
-./reDock.sh
+./crossDock.sh
 ```
 
 ## Usage
-**reDock** script needs a file named proteins.dat with the pdb codes and chain letter of the proteins, this is an example:
+**crossDock** script needs a file named proteins.dat with the pdb codes and chain letter of the proteins, this is an example:
 ```bash
 2PRG A
 3CS8 A
