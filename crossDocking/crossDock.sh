@@ -169,8 +169,8 @@ do
 	    cd poses
 
 	    realPosition=`grep "RANKING" ../$pdbcode$ligand.dlg | awk -v var="$pose" '{ if ( $3 == var ) print NR }'`
-	    # bindingEnergy=`grep "RANKING" ../$pdbcode$ligand.dlg | awk -v var="$pose" '{ if ( $3 == var ) print $4 }'`
-
+	    bindingEnergy[$realPosition-1]=`grep "RANKING" ../$pdbcode$ligand.dlg | awk -v var="$pose" '{ if ( $3 == var ) print $4 }'`
+	    
 	    pythonsh $adtToolsPath/pdbqt_to_pdb.py -f $poseName.pdbqt
 
 	    poseOrder=`echo "pose"$realPosition`
@@ -195,10 +195,10 @@ do
 	    if [ $lig -eq 1 ]
 	    then
 		echo $pose" "$rmsd >> $workindDir/Results/$dataFile
-		echo $pdbcode" "$rmsd >> $workindDir/Results/allRMSDdata.dat
+		echo $pdbcode" "$lig" "$pose" "$rmsd" "${bindingEnergy[$pose-1]} >> $workindDir/Results/allData.dat
 	    else
 		sed -i.bak "${pose}s/$/ ${rmsd}/" $workindDir/Results/$dataFile
-		echo $pdbcode" "$rmsd >> $workindDir/Results/allRMSDdata.dat
+		echo $pdbcode" "$lig" "$pose" "$rmsd" "${bindingEnergy[$pose-1]} >> $workindDir/Results/allData.dat
 		rm $workindDir/Results/*.bak
 	    fi
 	    	    
@@ -208,6 +208,10 @@ do
 	
 	cd ..
     done
+
+#####################################################################################
+### Plot wiht RMSD vs Poses for each protein and ligand using GNUPlot ###############
+#####################################################################################    
 
     gnuPlotFile="gPlot"$pdbcode".gp"
     gnuPlotGraph="graph_"$pdbcode".png"
@@ -244,7 +248,8 @@ do
     
 done
 
-#Sorting RMSD values and extracting the lowest value for each protein and graph them
+# Sorting RMSD values and extracting the lowest value and his binding energy
+# for each protein and graph them
 
 cd Results
 
@@ -253,53 +258,83 @@ do
     pdbcode=`awk -v var=$i '{if(NR==var) print $1}' ../$filename`
     dataFile=`echo "rmsd_"$pdbcode".dat"`
     dataLowest=`echo "allProteinsLowestRMSD.dat"`
-
+    dataAllEnergy=`echo "Energy_for_LowestRMSD_allProts.dat"`
     vectorProts[$i-1]=$pdbcode
+
+    if [ $i -eq 1 ]
+    then
+	echo " , "$pdbcode >> $workindDir/Results/$dataLowest
+	echo " , "$pdbcode >> $workindDir/Results/$dataAllEnergy
+    else
+	sed -i.bak "1s/$/, ${pdbcode}/" $workindDir/Results/$dataLowest
+	sed -i.bak "1s/$/, ${pdbcode}/" $workindDir/Results/$dataAllEnergy
+	rm $workindDir/Results/*.bak
+    fi
+    
 
     for j in `seq 1 $protNumber`
     do
 	column=$((j + 1))
+	row=$((j + 1))
+	ligand=`echo "ligand"$j`
 	lowestRMSD=`sort -n -k $column -t ' ' $dataFile | awk -v var=$column '{if(NR==1) print $var}'`
-	
+	whichPose=`sort -n -k $column -t ' ' $dataFile | awk '{if(NR==1) print $1}'`
+	energyOfLowestRMSD=`grep "RANKING" ../protein$i/$ligand/$pdbcode$ligand.dlg | awk -v var="$whichPose" '{ if ( NR == var ) print $4 }'`
+
 	if [ $i -eq 1 ]
 	then
-	    echo $j" "$lowestRMSD >> $workindDir/Results/$dataLowest
+	    echo $j", "$lowestRMSD >> $workindDir/Results/$dataLowest
+	    echo $j", "$energyOfLowestRMSD >> $workindDir/Results/$dataAllEnergy
 	else
-	    sed -i.bak "${j}s/$/ ${lowestRMSD}/" $workindDir/Results/$dataLowest
+    	    sed -i.bak "${row}s/$/, ${lowestRMSD}/" $workindDir/Results/$dataLowest
+	    sed -i.bak "${row}s/$/, ${energyOfLowestRMSD}/" $workindDir/Results/$dataAllEnergy
 	    rm $workindDir/Results/*.bak
 	fi
     done
 done
 
-echo "#!/usr/bin/gnuplot" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo 'set terminal pngcairo enhanced background "#ffffff" fontscale 2.5 dashed size 1920, 1280' >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "set encoding iso_8859_1" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "set output '"$workindDir"/Results/gnuPlotAllRMSD.png'" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "set style fill solid 0.5 border -1" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "set style boxplot outliers pointtype 7" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "set style data boxplot" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "set boxwidth  0.5" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "set pointsize 3" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "unset key" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo 'set xtics auto nomirror font "Arial"' >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo 'set ytics axis nomirror out font "Arial, 20"' >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "set yrange [*:*]" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo 'set arrow from 0,2 to '$protNumber',2 nohead dt 9 lw 4 lc "red"' >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo 'set ylabel "RMSD" font "Arial, 20"' >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "" >> $workindDir/Results/gnuPlotAllRMSD.gp
-echo "plot 'allRMSDdata.dat' using (1):2:(0):1 lc variable lw 2" >> $workindDir/Results/gnuPlotAllRMSD.gp
 
-gnuplot $workindDir/Results/gnuPlotAllRMSD.gp
+#####################################################################################
+### Box and Whisker plot using GNUPlot ##############################################
+#####################################################################################
+
+gnuPlotAllRMSD_boxAndwhisker="boxAndwhiskerRMSD.gp"
+gnuPlotGraphAllRMSD_boxAndwhisker="graph_boxAndwhiskerRMSD.png"
+limitArrow=`echo "$protNumber +  0.75" | bc`
+
+echo "#!/usr/bin/gnuplot" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo 'set terminal pngcairo enhanced background "#ffffff" fontscale 2.5 dashed size 1920, 1280' >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "set encoding iso_8859_1" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "set output '"$workindDir"/Results/"$gnuPlotGraphAllRMSD_boxAndwhisker"'" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "set style fill solid 0.5 border -1" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "set style boxplot outliers pointtype 7" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "set style data boxplot" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "set boxwidth  0.5" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "set pointsize 3" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "unset key" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo 'set xtics auto nomirror font "Arial"' >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo 'set ytics axis nomirror out font "Arial, 20"' >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "set yrange [*:*]" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo 'set arrow from 0.5,2 to '$limitArrow',2 nohead dt 9 lw 4 lc "red"' >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo 'set ylabel "RMSD" font "Arial, 20"' >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo "plot 'allData.dat' using (1):4:(0):1 lc variable lw 2" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+
+gnuplot $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+
+#####################################################################################
+### Graph with lowest RMSD for each protein using GNUPlot ###########################
+#####################################################################################
+xNewRange=$((protNumber - 1))
 
 gnuPlotAllProts="allProteinsLowestRMSD.gp"
 gnuPlotGraphAllprots="graph_allProteinsLowestRMSD.png"
 
 touch $workindDir/Results/$gnuPlotAllProts
-
 echo "#!/usr/bin/gnuplot" >> $workindDir/Results/$gnuPlotAllProts
 echo "" >> $workindDir/Results/$gnuPlotAllProts
 echo 'set terminal pngcairo enhanced background "#ffffff" fontscale 2.5 dashed size 1920, 1280' >> $workindDir/Results/$gnuPlotAllProts
@@ -307,7 +342,8 @@ echo "" >> $workindDir/Results/$gnuPlotAllProts
 echo "set encoding iso_8859_1" >> $workindDir/Results/$gnuPlotAllProts
 echo "set output '"$workindDir"/Results/"$gnuPlotGraphAllprots"'" >> $workindDir/Results/$gnuPlotAllProts
 echo "" >> $workindDir/Results/$gnuPlotAllProts
-echo "set xrange [1:"$protNumber"]" >> $workindDir/Results/$gnuPlotAllProts
+echo "set datafile separator ','" >> $workindDir/Results/$gnuPlotAllProts
+echo "set xrange [0:"$xNewRange"]" >> $workindDir/Results/$gnuPlotAllProts
 echo "set yrange [0:*]" >> $workindDir/Results/$gnuPlotAllProts
 echo "" >> $workindDir/Results/$gnuPlotAllProts
 echo 'set xlabel "Ligands" font "Arial, 20"' >> $workindDir/Results/$gnuPlotAllProts
@@ -319,11 +355,83 @@ echo 'set ytics axis nomirror out font "Arial, 20"' >> $workindDir/Results/$gnuP
 echo "set mxtics" >> $workindDir/Results/$gnuPlotAllProts
 echo "set mytics" >> $workindDir/Results/$gnuPlotAllProts
 echo "" >> $workindDir/Results/$gnuPlotAllProts
-echo 'set arrow from 1,2 to '$protNumber',2 nohead dt 9 lw 4 lc "red"' >> $workindDir/Results/$gnuPlotAllProts
+echo 'set arrow from 0,2 to '$xNewRange',2 nohead dt 9 lw 4 lc "red"' >> $workindDir/Results/$gnuPlotAllProts
 echo 'list = "'${vectorProts[@]}'"' >> $workindDir/Results/$gnuPlotAllProts
 echo "item(n) = word(list,n)" >> $workindDir/Results/$gnuPlotAllProts
-echo 'plot for [i=1:words(list)] "'$workindDir/Results/$dataLowest'" using 1:i+1 title item(i) with linespoints lw 2.5 ps 3' >> $workindDir/Results/$gnuPlotAllProts
+echo 'plot for [i=1:words(list)] "'$workindDir/Results/$dataLowest'" every ::1 using 0:i+1:xticlabels(1) title item(i) with linespoints lw 2.5 ps 3' >> $workindDir/Results/$gnuPlotAllProts
 
 gnuplot $workindDir/Results/$gnuPlotAllProts
+
+#####################################################################################
+### HEATMAP with lowest RMSD for each protein using GNUPlot #########################
+#####################################################################################
+
+gnuPlotHeatmapRMSD="heatmapLowestRMSD.gp"
+gnuPlotGraphHeatmapRMSD="graph_heatmapLowestRMSD.png"
+
+echo "#!/usr/bin/gnuplot" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo 'set terminal pngcairo enhanced background "#ffffff" fontscale 2.5 dashed size 1920, 1280' >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "set encoding iso_8859_1" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "set datafile separator ','" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "set output '"$gnuPlotGraphHeatmapRMSD"'" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "set style increment default" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "set view map scale 1" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "set style data lines" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "set xtics border in scale 0,0 mirror rotate by -90 autojustify" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "set xtics  norangelimit" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "set xtics   ()" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "set ytics border in scale 0,0 mirror norotate  autojustify" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "set ytics  norangelimit" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "set ytics   ()" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "set cbtics border in scale 0,0 mirror norotate  autojustify" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo 'set cblabel "RMSD"' >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "set cbrange [ 0.00000 : 4.00000 ] noreverse nowriteback" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo 'set palette defined (0 "green", 1 "blue", 2 "orange", 3 "red")' >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo 'set xlabel "Proteins" font "Arial, 20" offset 0,-1,0' >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo 'set ylabel "Ligands"  font "Arial, 20"' >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+echo "plot '"$workindDir/Results/$dataLowest"' matrix rowheaders columnheaders using 1:2:3 with image notitle" >> $workindDir/Results/$gnuPlotHeatmapRMSD
+
+gnuplot $workindDir/Results/$gnuPlotHeatmapRMSD
+
+#####################################################################################
+### Energy HEATMAP with lowest RMSD for each protein using GNUPlot ##################
+#####################################################################################
+
+gnuPlotHeatmapEnergy="heatmapEnergy_lowestRMSD.gp"
+gnuPlotGraphHeatmapEnergy="graph_heatmapEnergy_lowestRMSD.png"
+
+echo "#!/usr/bin/gnuplot" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo 'set terminal pngcairo enhanced background "#ffffff" fontscale 2.5 dashed size 1920, 1280' >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "set encoding iso_8859_1" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "set datafile separator ','" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "set output '"$gnuPlotGraphHeatmapEnergy"'" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "set style increment default" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "set view map scale 1" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "set style data lines" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "set xtics border in scale 0,0 mirror rotate by -90 autojustify" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "set xtics  norangelimit" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "set xtics   ()" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "set ytics border in scale 0,0 mirror norotate  autojustify" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "set ytics  norangelimit" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "set ytics   ()" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "set cbtics border in scale 0,0 mirror norotate  autojustify" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo 'set cblabel "RMSD"' >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "set cbrange [ * : * ] noreverse nowriteback" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo 'set palette defined (0 "green", 1 "red")' >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo 'set xlabel "Proteins" font "Arial, 20" offset 0,-1,0' >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo 'set ylabel "Ligands"  font "Arial, 20"' >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+echo "plot '"$workindDir/Results/$dataAllEnergy"' matrix rowheaders columnheaders using 1:2:3 with image notitle" >> $workindDir/Results/$gnuPlotHeatmapEnergy
+
+gnuplot $workindDir/Results/$gnuPlotHeatmapEnergy
 
 cd ..
