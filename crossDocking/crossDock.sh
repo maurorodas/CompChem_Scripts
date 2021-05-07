@@ -1,26 +1,53 @@
+# crossDock is a script to performs crossDociking calculations usign Autodock4
+#
+# Copyright (C) 2021  José Mauricio Rodas Rodríguez
+#
+# University: Universidad de Caldas (Colombia)
+# Deparment: Chemistry
+# mail: mauricio.rodas@ucaldas.edu.co
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 #!/bin/bash
 
 paramsFile='parameters.inp'
+# file with proteins and chain to perform a redocking calculation
+filename='proteins.dat'
+
+#####################################################################################
+### Reading parameters file #########################################################
+#####################################################################################
+
 # Number of the proteins to perform the redocking calculation
 protNumber=`awk '{if(NR==1) print $2}' $paramsFile`
 # Name in the pdb file of the ligand to use for the redocking
 ligandName=`awk '{if(NR==2) print $2}' $paramsFile`
-
+# Center of the box
 centerX=`awk '{if(NR==3) print $2}' $paramsFile`
 centerY=`awk '{if(NR==3) print $3}' $paramsFile`
 centerZ=`awk '{if(NR==3) print $4}' $paramsFile`
-
+# Size of the box
 sizeX=`awk '{if(NR==4) print $2}' $paramsFile`
 sizeY=`awk '{if(NR==4) print $3}' $paramsFile`
 sizeZ=`awk '{if(NR==4) print $4}' $paramsFile`
-
+# Spacing for autodock4
 spacingVal=`awk '{if(NR==5) print $2}' $paramsFile`
+# Number of evaluations for GA or LGA method
 gaEvals=`awk '{if(NR==6) print $2}' $paramsFile`
-
+# Path to AutodockTools
 adtToolsPath=`awk '{if(NR==7) print $2}' $paramsFile`
 
-# file with proteins and chain to perform a redocking calculation
-filename='proteins.dat'
 workindDir=`pwd`
 
 # Directory to save all ligands 
@@ -122,10 +149,16 @@ do
 
     cp ligandsDir/ligand* $fileProt/.
 
+    # Preparing receptor sytem
     cd $fileProt
-    pythonsh $adtToolsPath/prepare_receptor4.py -r $protein_h.pdb -A hydrogens -o $protein_h.pdbqt
+    pythonsh $adtToolsPath/prepare_receptor4.py -r $protein_h.pdb -o $protein_h.pdbqt
 
     ligand=''
+
+    #####################################################################################
+    ### This loops makes the docking calculation for each ligand ########################
+    #####################################################################################
+    
     for lig in `seq 1 $protNumber`
     do
 	ligand=`echo "ligand$lig"`
@@ -145,22 +178,34 @@ do
 	cp $protein_h.pdbqt $ligand/.
 
 	cd $ligand
-
+	
+	# Preparing ligand system
 	pythonsh $adtToolsPath/prepare_ligand4.py -l $ligand_h.pdb -o $ligand_h.pdbqt
 	ligandRandom=`echo $ligand"_random"`
+	# Randomizing ligand conformer
 	pythonsh $adtToolsPath/write_random_state_ligand.py -l $ligand_h.pdbqt -o $ligandRandom.pdbqt
-	
+
+	# Preparing grid file
 	pythonsh $adtToolsPath/prepare_gpf4.py -l $ligandRandom.pdbqt -r $protein_h.pdbqt -p npts="$sizeX,$sizeY,$sizeZ" -p gridcenter="$centerX,$centerY,$centerZ" -p spacing="$spacingVal" -o $pdbcode$ligand.gpf
+	# Preparing dpf file
 	pythonsh $adtToolsPath/prepare_dpf4.py -l $ligandRandom.pdbqt -r $protein_h.pdbqt -p ga_num_evals=$gaEvals -o $pdbcode$ligand.dpf
 
+	# Calling autogrid to obtain maps
 	autogrid4 -p $pdbcode$ligand.gpf -l $pdbcode$ligand.glg
+	# The docking!
 	autodock4 -p $pdbcode$ligand.dpf -l $pdbcode$ligand.dlg
 
+	# Extracting poses from dlg
 	pythonsh $adtToolsPath/write_conformations_from_dlg.py -d $pdbcode$ligand.dlg
 	mkdir poses
 
 	
-
+	#####################################################################################
+	### This loop sorts the poses according to energy and renames them,             #####
+	### names ligandRandom_1.pdb for the lowest energy pose and ligandRandom_10.pdb #####
+	### for the highest energy pose, finally call Reduce to add hydrogen to the poses ###
+	#####################################################################################
+	
 	for pose in `seq 1 10`
 	do
 	    poseName=`echo $ligandRandom"_"$pose`
@@ -184,6 +229,10 @@ do
 	    cd ..
 	done
 	
+	#####################################################################################
+	### This loop save all Data, RMSD and Binding Energy in a file named allData.dat ####
+	### and saves all RMSDs of each protein in an individual file                    ####
+	#####################################################################################
 	for pose in `seq 1 10`
 	do
 	    cd poses
@@ -209,9 +258,9 @@ do
 	cd ..
     done
 
-#####################################################################################
-### Plot wiht RMSD vs Poses for each protein and ligand using GNUPlot ###############
-#####################################################################################    
+    #####################################################################################
+    ### Plot wiht RMSD vs Poses for each protein and ligand using GNUPlot ###############
+    #####################################################################################    
 
     gnuPlotFile="gPlot"$pdbcode".gp"
     gnuPlotGraph="graph_"$pdbcode".png"
@@ -248,9 +297,10 @@ do
     
 done
 
-# Sorting RMSD values and extracting the lowest value and his binding energy
-# for each protein and graph them
-
+#####################################################################################
+# Sorting RMSD values and extracting the lowest value and his binding energy ########
+# for each protein and graph them                                            ########
+#####################################################################################
 cd Results
 
 for i in `seq 1 $protNumber`
@@ -320,6 +370,7 @@ echo 'set ytics axis nomirror out font "Arial, 20"' >> $workindDir/Results/$gnuP
 echo "set yrange [*:*]" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
 echo "" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
 echo 'set arrow from 0.5,2 to '$limitArrow',2 nohead dt 9 lw 4 lc "red"' >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
+echo 'set xlabel "Proteins" font "Arial, 20"' >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
 echo 'set ylabel "RMSD" font "Arial, 20"' >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
 echo "" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
 echo "plot 'allData.dat' using (1):4:(0):1 lc variable lw 2" >> $workindDir/Results/$gnuPlotAllRMSD_boxAndwhisker
