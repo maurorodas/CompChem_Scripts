@@ -30,7 +30,7 @@ The first file need to be named as proteins.dat and contains the pdb codes and c
 
 <p class="codeblock-label">proteins.dat</p>
 
-```bash
+```markdown
 2PRG A
 3CS8 A
 3DZY D
@@ -38,13 +38,13 @@ The first file need to be named as proteins.dat and contains the pdb codes and c
 1ZGY A
 ```
 
-**Important Note: ** The first protein is always taken as the reference protein and you need to obtain the box parameters for that protein.
+**Important Note:** The first protein is always taken as the reference protein and you need to obtain the box parameters for that protein.
 
 The second file nedd to be named parameter.inp, This file contains the necessary parameters to perform the docking calculation, this is an example
 
 <p class="codeblock-label">parameters.inp</p>
 
-```bash 
+```markdown
 proteinNumber 5
 ligand3LetterName BRL
 center 50.395 -37.797 19.013
