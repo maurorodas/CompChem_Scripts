@@ -1,4 +1,4 @@
-# crossDock is a script to performs crossDociking calculations usign Autodock4
+# reDock is a script to performs re-Dociking calculations usign Autodock4
 #
 # Copyright (C) 2021  José Mauricio Rodas Rodríguez
 #
