@@ -26,11 +26,9 @@ chmod +x reDock.sh
 ## Usage
 **reDock** script needs two files for doing the job, these files must be in the same directory as the script.
 
-The first file need to be named as proteins.dat and contains the pdb codes and chain letter of the proteins, this is an example:
+The first file need to be named as **proteins.dat** and contains the pdb codes and chain letter of the proteins, this is an example:
 
-<p class="codeblock-label">proteins.dat</p>
-
-```markdown
+```
 2PRG A
 3CS8 A
 3DZY D
@@ -40,11 +38,9 @@ The first file need to be named as proteins.dat and contains the pdb codes and c
 
 **Important Note:** The first protein is always taken as the reference protein and you need to obtain the box parameters for that protein.
 
-The second file nedd to be named parameter.inp, This file contains the necessary parameters to perform the docking calculation, this is an example
+The second file nedd to be named **parameter.inp**, This file contains the necessary parameters to perform the docking calculation, this is an example:
 
-<p class="codeblock-label">parameters.inp</p>
-
-```markdown
+```
 proteinNumber 5
 ligand3LetterName BRL
 center 50.395 -37.797 19.013
