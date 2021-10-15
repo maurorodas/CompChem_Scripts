@@ -1,0 +1,7 @@
+proteinNumber 13
+ligand3LetterName BRL
+center 50.395 -37.797 19.013
+size 41 41 34
+spacing 0.375
+gaEvals 2500000
+adtPath /usr/local/mgltools/MGLToolsPckgs/AutoDockTools/Utilities24
